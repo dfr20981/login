@@ -20,15 +20,19 @@
 			<td>email</td>
 			<td>usuario</td>
 			<td>privileguio</td>
+		<!--OBSIONES DE USUARIO O permisos-->
 			<?php if ($_SESSION['tipo_usuario']==5) {?>
 			<td style="text-align: center;">Editar</td>
 			<?php	} ?>
+
 			<?php if ($_SESSION['tipo_usuario']==5) {?>
 				<td style="text-align: center;">cambiar password</td>
 			<?php	} ?>
+
 			<?php if ($_SESSION['tipo_usuario']==5) {?>
 			<td style="text-align: center;">Eliminar</td>
 			<?php	} ?>
+
 		</tr>
 	<?php
 
