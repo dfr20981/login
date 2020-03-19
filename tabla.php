@@ -1,15 +1,14 @@
 
 
-<?php
-	require_once "php/conexion.php";
+<?php require_once "php/conexion.php";
 	$conexion=conexion();
 //suso de vistas
 	$sql="SELECT * FROM generico";
 	$result=mysqli_query($conexion,$sql);
  ?>
 
-<span class="btn btn-raised btn-primary btn-lg" data-toggle="modal" data-target="#addmodal">
-			<span class="fa fa-plus-circle"></span> agrega nuevo
+		<span class="btn btn-raised btn-primary btn-lg" data-toggle="modal" data-target="#addmodal">
+		<span class="fa fa-plus-circle"></span> agrega nuevo
 		</span>
 
 <table id="example" class="table table-sm table-inverse table-bordered">
@@ -21,23 +20,12 @@
 			<td>usuario</td>
 			<td>privileguio</td>
 		<!--OBSIONES DE USUARIO O permisos-->
-			<?php if ($_SESSION['tipo_usuario']==5) {?>
+		<?php  ?>
 			<td style="text-align: center;">Editar</td>
-			<?php	} ?>
-
-			<?php if ($_SESSION['tipo_usuario']==5) {?>
 				<td style="text-align: center;">cambiar password</td>
-			<?php	} ?>
-
-			<?php if ($_SESSION['tipo_usuario']==5) {?>
 			<td style="text-align: center;">Eliminar</td>
-			<?php	} ?>
-
 		</tr>
-	<?php
-
-		while ($ver=mysqli_fetch_row($result)):
-	 ?>
+	<?php while ($ver=mysqli_fetch_row($result)):?>
 		<tr>
 			<td><?php echo $ver[0]; ?></td>
 			<td><?php echo $ver[1]; ?></td>
@@ -59,7 +47,5 @@
 			</td>
 		</tr>
 
-		<?php
-			endwhile;
-		 ?>
+		<?php endwhile; ?>
 </table>

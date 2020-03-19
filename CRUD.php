@@ -1,14 +1,5 @@
-
-
-
-<!DOCTYPE html>
-<html>
-<title>Crud</title>
-<head>
-  <?php require_once "dependencias.php"; ?>
-
-</head>
-<body>
+<?php require "php/head.php"?>
+<?php require "php/header.php" ?>
 	<div class="container">
 		<br>
 		<h1>usuarios reguistro</h1>
@@ -93,8 +84,8 @@
     </div>
   </div>
   <!--************************************************* updatemodal ***********************************************-->
-</body>
-</html>
+
+<?php require "php/footer.php" ?>
 
 
 
