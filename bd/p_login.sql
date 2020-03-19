@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 14-03-2020 a las 00:12:44
+-- Tiempo de generación: 19-03-2020 a las 18:35:50
 -- Versión del servidor: 10.4.11-MariaDB
 -- Versión de PHP: 7.2.27
 
@@ -26,8 +26,13 @@ DELIMITER $$
 --
 -- Procedimientos
 --
-CREATE DEFINER=`root`@`localhost` PROCEDURE `actualisarU` (IN `_name` TEXT, IN `_Lname` TEXT, IN `_username` VARCHAR(100), IN `_email` VARCHAR(255), IN `_id_p` INT(11), IN `_id` INT(11))  BEGIN 
-	UPDATE usuarios SET name=_name,Lname=_Lname,username=_username,email=_email,id_p=_id_p WHERE id=_id;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `actualisarU` (IN `_name` TEXT(11), IN `_Lname` TEXT(11), IN `_username` VARCHAR(100), IN `_email` VARCHAR(255), IN `_id_p` INT(11), IN `_id` INT(11))  BEGIN
+	UPDATE usuarios SET name=_name,
+    Lname=_Lname,
+    username=_username,
+    email=_email,
+    id_p=_id_p
+    WHERE id=_id;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `cambio_pass` (IN `_id` INT(11), IN `_name` TEXT, IN `_token` VARCHAR(255), IN `_pass` VARCHAR(255))  BEGIN
@@ -48,11 +53,27 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `eliminar` (IN `_id` INT)  BEGIN
     WHERE id=_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `login` (IN `_username` VARCHAR(100), IN `_pass` VARCHAR(255), OUT `_Result` TINYINT)  BEGIN
-    SET _Result = -1;
-    IF(EXISTS(SELECT 1 FROM usuarios WHERE(username = _username AND pass = _pass)))THEN
-    SET _Result := (SELECT username  FROM usuarios WHERE(usuarios = _usuarios AND pass = _pass));
-END IF;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `login` (IN `_username` VARCHAR(100), IN `_pass` VARCHAR(255))  BEGIN
+	#CREATE PROCEDURE login2( IN _username VARCHAR(100),	IN _pass VARCHAR(255))
+    SET @psw= fn_createKeySha1(_pass,0);
+    SET @res = '{"error":true,"msg":"no reconoce usuario y/o contraseña"}';
+    IF(EXISTS(SELECT 1 FROM usuarios WHERE(username = _username AND pass = @psw)))THEN
+
+		UPDATE usuarios
+			SET token=fn_createKeySha1(username,1)
+        WHERE (username = _username AND pass = @psw);
+
+        #name,Lname,username,email,pass,id_p
+
+				SET @res =CONCAT('"error":false,"res":',
+					(SELECT CONCAT('[',
+				GROUP_CONCAT(JSON_OBJECT('id',id_p,'nom',name,'Lname',Lname,'token',token,'email',email)),
+			']')
+			FROM usuarios
+            WHERE (username = _username AND pass = @psw))
+        ) ;
+    END IF;
+    SELECT @res;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `mustrate_abra_ca` ()  BEGIN
@@ -70,8 +91,35 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `obtener_regidtro` (IN `_id` INT(11)
 	SELECT * FROM usuarios WHERE id=_id;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `RegistraUsuario` (IN `_name` TEXT(50), IN `_Lname` TEXT(50), IN `_username` VARCHAR(100), IN `_email` VARCHAR(255), IN `_pass` VARCHAR(255))  BEGIN
-	INSERT INTO usuarios (name, Lname, username, email, pass) VALUES(_name, _Lname, _username, _email, _pass);
+CREATE DEFINER=`root`@`localhost` PROCEDURE `RegistraUsuario` (IN `_name` TEXT, IN `_Lname` TEXT, IN `_username` VARCHAR(100), IN `_email` VARCHAR(255), IN `_pass` VARCHAR(255), IN `_id_p` INT(11))  BEGIN
+	SET @extEmail=(
+		CASE WHEN EXISTS(SELECT 1 FROM usuarios WHERE(email = _email))
+			THEN false
+            ELSE true
+        END
+    );
+
+    SET @extUser=(
+		CASE WHEN EXISTS(SELECT 1 FROM usuarios WHERE(username = _username))
+			THEN false
+            ELSE true
+        END
+    );
+
+    #SELECT @extEmail,@extUser;
+    SET @res='{"error":true,"msg":"El email ya esta registrado"}';
+    IF @extEmail THEN
+		IF @extUser THEN
+        	INSERT INTO usuarios (name,Lname,username,email,pass,id_p)
+			VALUES (_name,_Lname,_username,_email,fn_createKeySha1(_pass,0),_id_p);
+			#SELECT _name,_Lname,_username,_email,fn_createKeySha1(_pass,0),_id_p;
+            SET @res='{"error":false,"msg":"Usuario registrado"}';
+		ELSE
+			SET @res='{"error":true,"msg":"El Nombre de usuario ya esta registrado"}';
+		END IF;
+    END IF;
+
+    SELECT @res;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `reguistra` (IN `_email` VARCHAR(255), IN `_username` VARCHAR(100), IN `_name` TEXT, IN `_Lname` TEXT, IN `_pass` VARCHAR(255))  BEGIN
@@ -116,16 +164,16 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `reguistra_token` (INOUT `_id` INT(1
     /*GENARA EL PASSWOR*/
     SET aux = CONCAT( ' ', _id);
     SET digitos = RIGHT( aux, 5);
-    
+
     /*mayusculas*/
     SET letraN = UPPER( LEFT( _name, 1));
-    
+
     /*minusculas*/
     SET letraA1 = LOWER( LEFT( _Lname, 1));
     SET letraA2 = LOWER( SUBSTRING( _Lname, pos + 1, 1));
     SET pass = CONCAT( digitos, letraN, '-', letraA1, letraA2);
 
-    /*insertar fecha*/    
+    /*insertar fecha*/
     /*INSERT INTO usuarios VALUES( now());*/
 
     /*insertar usuario*/
@@ -143,7 +191,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `verifica_to` (IN `token` VARCHAR(25
         IF resultado IS NULL THEN
             INSERT INTO  usuarios(descripcion, vigente) VALUES (id, token);
 
-    else 
+    else
         SELECT ERRORS;
     END IF;
     ELSEIF opcion = 3 THEN
@@ -155,6 +203,21 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `verifica_to` (IN `token` VARCHAR(25
     else
         SELECT FALSE;
     END IF;
+END$$
+
+--
+-- Funciones
+--
+CREATE DEFINER=`root`@`localhost` FUNCTION `fn_createKeySha1` (`_str` VARCHAR(100), `_op` INT) RETURNS VARCHAR(250) CHARSET utf8mb4 COLLATE utf8mb4_spanish_ci BEGIN
+    SET @secret="arbei";
+    SET @cifrado='';
+    IF _op=0 THEN
+    SET @cifrado=SHA1(CONCAT(@secret,_str));
+    ELSE
+    SET @hoy=DATE_FORMAT(NOW(), "%M %D %y");
+    SET @cifrado=SHA1(CONCAT(@secret,_str,@hoy));
+    END IF;
+RETURN @cifrado;
 END$$
 
 DELIMITER ;
@@ -261,6 +324,16 @@ INSERT INTO `privileguio` (`id_p`, `permisos`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Estructura Stand-in para la vista `privileguiosss`
+-- (Véase abajo para la vista actual)
+--
+CREATE TABLE `privileguiosss` (
+`tipo_de_usuarios` text
+);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura Stand-in para la vista `supervisor`
 -- (Véase abajo para la vista actual)
 --
@@ -296,7 +369,8 @@ INSERT INTO `usuarios` (`id`, `name`, `Lname`, `username`, `email`, `pass`, `id_
 (1, 'diego', 'fulgencio', 'dfr2098', 'edsiodfr@hotmail.com', 'aliens123456789QQ', 1, '00:00:00', '1diegofulgenciodfr2098ARBEI'),
 (2, 'diego', 'jhvjv', 'hgxtdhtgdc', 'edsiodfr@hotmail.com', 'aliens123456789QQ', 3, '00:00:00', '2diegojhvjvhgxtdhtgdcARBEI'),
 (4, 'dfjdcdc', 'mjgcmjgxc', 'htesdutw64e5rr55t', 'edscuytd@lfuvkfv.com', 'adfsdfdsfsdiens123456789Q', 2, '00:00:00', '4dfjdcdcmjgcmjgxchtesdutw64e5rr55tARBEI\r\n'),
-(5, '', '', '', '', 'efqfqfqwf', 0, '00:00:00', '5ARBEI');
+(5, '', '', 'sdfsdfsdfsq1213', 'edsiodfr@fasiohp.com', 'efqfqfqwf', 4, '00:00:00', '5ARBEI'),
+(6, 'DIEGO', 'FULGENCIO', 'DFR2098111', 'EDSIODFR@GMAILLLL.COM', 'ec881e41de9d90dc5b9467b9a5ca1d41201d5dfa', 1, '00:00:00', '');
 
 -- --------------------------------------------------------
 
@@ -333,6 +407,15 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `masters`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `masters`  AS  select `usuarios`.`id` AS `id`,`usuarios`.`id_p` AS `id_p`,`usuarios`.`name` AS `name`,`usuarios`.`Lname` AS `Lname` from `usuarios` where `usuarios`.`username` is not null order by `usuarios`.`id_p` desc ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `privileguiosss`
+--
+DROP TABLE IF EXISTS `privileguiosss`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `privileguiosss`  AS  select `privileguio`.`permisos` AS `tipo_de_usuarios` from `privileguio` ;
 
 -- --------------------------------------------------------
 
@@ -386,7 +469,7 @@ ALTER TABLE `privileguio`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Restricciones para tablas volcadas
