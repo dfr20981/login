@@ -1,6 +1,7 @@
 
 
-<?php require_once "php/conexion.php";
+<?php
+	require_once "php/conexion.php";
 	$conexion=conexion();
 //suso de vistas
 	$sql="SELECT * FROM generico";

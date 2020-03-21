@@ -6,12 +6,12 @@
 
 	$nombre=$_POST['name'];
 	$apellido=$_POST['Lname'];
-	$email=$_POST['email'];
-	$usuario=$_POST['usuario'];
+	$email=$_POST['username'];
+	$usuario=$_POST['email'];
 	$contrase=$_POST['pass'];
-	$privileguio=$_POST['privileguio'];
+	$privileguio=$_POST['id_p'];
 
-	$sql="CALL reguistra('$email','$usuario','$nombre','$apellido','$password')";
+	$sql="CALL RegistraUsuario('$nombre','$apellido','$email','$usuario','$contrase','$privileguio')";
 
 	echo mysqli_query($conexion,$sql);
 

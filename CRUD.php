@@ -111,9 +111,9 @@
           if(r==1){
            $('#frmAgrega')[0].reset();
            $('#tablastores').load('tabla.php');
-           alertify.success("Agregado con exito :)");
+           alertify.success("Agregado:)");
          }else{
-          alertify.error("No se pudo agregar :(");
+          alertify.error("no se a podidi Agregar:");
         }
       }
     });

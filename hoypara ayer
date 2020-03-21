@@ -1,0 +1,54 @@
+DROP PROCEDURE IF EXISTS ;
+DELIMITER //
+CREATE PROCEDURE
+(
+  IN _name text,
+  IN _Lname text,
+  IN _username varchar(100),
+  IN _email varchar(255),
+  IN _pass varchar(255),
+  IN _id_p int(11),
+  IN _dt_registro time
+)
+BEGIN
+SET _email_VERIFICA=(
+  CASE WHEN EXISTS(SELECT 1 FROM usuarios WHERE(email = _email))
+  then false
+    ELSE true
+  END
+);
+
+SET _username_VERIFICA=(
+  CASE WHEN EXISTS(SELECT 1 FROM usuarios WHERE(username = _username))
+    then false
+  ELSE true
+);
+#SELECT _email_VERIFICA,_username_VERIFICA;
+SET @res='{"error":"el email ya fue registrado"}';
+IF _email_VERIFICA THEN
+IF _username_VERIFICA THEN
+INSERT INTO usuarios (name,Lname,username,email,pass,1)
+VALUES (_name,_Lname,_username)
+END
+//
+DELIMITER;
+
+
+
+
+DROP FUNCTION IF EXISTS fn_creartokeny;
+DELIMITER //
+CREATE FUNCTION fn_creartokeny(_re_hora varchar(255), _op INT) RETURNS VARCHAR(255)
+BEGIN
+  SET @clabe="alien940807";
+  SET @PASSWOR='';
+  IF _op=0 THEN
+  SET @PASSWOR=SHA1(CONCAT(@clabe,_re_hora));
+  ELSE
+  SET @fecha=Date_format(now(),'%Y-%M-%d');
+  SET @PASSWOR=SHA1(CONCAT(@clabe,_re_hora,@fecha));
+END IF;
+RETURN @PASSWOR;
+END
+//
+DELIMITER ;

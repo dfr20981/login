@@ -13,4 +13,6 @@
 <script src="librerias/alertify/alertify.js"></script>
 <script src="librerias/materialbootstrap/popper.js"></script>
 <script src="librerias/materialbootstrap/bootstrap-material-design.js"></script>
+<script src="CRUD/index.js">
 
+</script>

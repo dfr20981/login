@@ -196,7 +196,7 @@ DELIMITER ;
 
 
 
-/*este no me permite ingresar al */
+
 
 DROP PROCEDURE IF EXISTS CONCATOKEM;
 USE p_login;
@@ -299,6 +299,10 @@ SELECT id,name,Lname,username,email,pass FROM usuarios
 
 
 
+CREATE VIEW generico AS
+SELECT id,name,Lname,email,username,id_p FROM usuarios
+
+
 
 CREATE VIEW cliente AS
 SELECT name AS nombre,Lname AS apellido,username AS usuario,email AS correo
@@ -318,10 +322,127 @@ CREATE PROCEDURE cambio_pass
 (
     IN _id int(11),
     IN _name text,
+    IN _token varchar(255),
     IN _pass varchar(255)
 )
 BEGIN
-    UPDATE usuarios SET pass=_pass WHERE _name=name;
+    IF NOT EXISTS(SELECT 1 FROM usuarios WHERE _name = name)THEN
+        IF NOT EXISTS(SELECT 2 FROM usuarios WHERE _id = id)THEN
+        UPDATE usuarios SET pass=_pass WHERE _token=token;
+            SELECT 0 AS error;
+        ELSE
+        	SELECT 2 AS error;
+        END if;
+    ELSE
+    	SELECT 1 AS error;
+    END IF;
+END
+//
+DELIMITER ;
+
+
+
+
+DROP FUNCTION IF EXISTS fn_createKeySha1;
+USE p_login;
+DELIMITER //
+ CREATE FUNCTION fn_createKeySha1(_str VARCHAR(100), _op INT) RETURNS varchar(250)
+
+BEGIN
+	SET @secret='arbeitapp'; # EJEMPLO LLAVE SECRETA :P
+
+    SET @cifrado='';
+    IF _op=0 THEN	#para la contraseña
+		SET @cifrado=SHA1(CONCAT(@secret,_str));
+    ELSE			#para el token
+		SET @hoy=DATE_FORMAT(NOW(), "%M %d %Y");
+        SET @cifrado=SHA1(CONCAT(@secret,_str,@hoy));
+    END IF;
+
+	RETURN @cifrado;
+END
+//
+DELIMITER ;
+
+
+
+
+
+DROP FUNCTION fn_createKeySha1;
+DELIMITER //
+CREATE FUNCTION fn_createKeySha1(_str VARCHAR(100), _op INT) RETURNS varchar(250)
+BEGIN
+    SET @secret="arbeitapp";
+    SET @cifrado='';
+    IF _op=0 THEN
+    SET @cifrado=SHA1(CONCAT(@secret,_str));
+    ELSE
+    SET @hoy=DATE_FORMAT(NOW(), "%M %D %y");
+    SET @cifrado=SHA1(CONCAT(@secret,_str,@hoy));
+    END IF;
+RETURN @cifrado;
+END
+ //
+DELIMITER ;
+
+
+
+SELECT fn_createKeySha1()
+
+DROP PROCEDURE IF EXISTS RegistraUsuarioDemo;
+USE p_login;
+DELIMITER //
+CREATE PROCEDURE RegistraUsuarioDemo
+(
+  IN _name
+  IN _Lname
+  IN _username
+  IN _email
+  IN _pass
+  IN _id_p
+  IN _dt_registro
+)
+BEGIN
+SET @extEmail=(
+  CASE WHEN EXISTS(SELECT 1 FROM usuarios WHERE(email = _email))
+    THEN false
+          ELSE true
+      END
+  );
+
+  SET @extUser=(
+  CASE WHEN EXISTS(SELECT 1 FROM usuarios WHERE(username = _username))
+    THEN false
+          ELSE true
+      END
+  );
+
+  #SELECT @extEmail,@extUser;
+  SET @res='{"error":true,"msg":"El email ya esta registrado"}';
+  IF @extEmail THEN
+  IF @extUser THEN
+        INSERT INTO usuarios (name,Lname,username,email,pass,id_p)
+    VALUES (_name,_Lname,_username,_email,fn_createKeySha1(_pass,0));
+    #SELECT _name,_Lname,_username,_email,fn_createKeySha1(_pass,0);
+          SET @res='{"error":false,"msg":"Usuario registrado"}';
+  ELSE
+    SET @res='{"error":true,"msg":"El Nombre de usuario ya esta registrado"}';
+  END IF;
+  END IF;
+
+  SELECT @res;
+END
+//
+DELIMITER ;
+
+
+
+
+
+DELIMITER //
+CREATE OR REPLACE TRIGGER usuarios_demo BEFORE DELETE ON usuarios_demo FOR EACH row
+BEGIN
+  INSERT INTO usuarios_demo_h SELECT * FROM usuarios_demo WHERE id = old.id;
 END
 //
 DELIMITER ;
